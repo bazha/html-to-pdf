@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { handlePDFRequest } from '..//controllers/pdf.controller';
+import { handlePDFRequest } from '../controllers/pdf.controller';
 
 const router = Router();
 

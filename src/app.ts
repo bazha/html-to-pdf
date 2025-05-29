@@ -1,6 +1,6 @@
 import express from 'express';
-import pdfRoutes from './routes/pdf.routes';
-import { errorHandler } from './middlewares/errorHandler';
+import pdfRoutes from './routes/pdf.route';
+import { errorHandler } from './middlewares/error-handler';
 
 const app = express();
 

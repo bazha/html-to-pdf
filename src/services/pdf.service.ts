@@ -1,9 +1,5 @@
 import puppeteer from "puppeteer";
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const PDFs_DIR = path.resolve('PDFs');
-
+import { uploadPdfToS3 } from "./s3.service";
 
 export const generatePDF = async (htmlContent: string): Promise<string> => {
   const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
@@ -11,14 +7,12 @@ export const generatePDF = async (htmlContent: string): Promise<string> => {
 
   await page.setContent(htmlContent, { waitUntil: "networkidle0" });
   const pdf = await page.pdf({ format: "A4", printBackground: true });
+  const pdfBuffer = Buffer.from(pdf);
 
   await browser.close();
 
-  await fs.mkdir(PDFs_DIR, { recursive: true });
+  const fileName = `document-${Date.now()}.pdf`;
+  const fileUrl = await uploadPdfToS3(pdfBuffer, fileName);
 
-  const fileName = `pdf-${Date.now()}.pdf`;
-  const filePath = path.join(PDFs_DIR, fileName);
-  await fs.writeFile(filePath, pdf);
-
-  return filePath;
+  return fileUrl;
 };
