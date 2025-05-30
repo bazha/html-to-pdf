@@ -1,7 +1,7 @@
-import { Upload } from '@aws-sdk/lib-storage';
-import { Readable, PassThrough } from 'stream'
-import { s3 } from '../config/s3.config';
-import dotenv from 'dotenv';
+import { Upload } from "@aws-sdk/lib-storage";
+import { Readable, PassThrough } from "stream";
+import { s3 } from "../config/s3.config";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -19,16 +19,15 @@ export const uploadPdfToS3 = async (
       Bucket: bucket,
       Key: key,
       Body: passThrough,
-      ContentType: 'application/pdf'
+      ContentType: "application/pdf",
     },
     queueSize: 4,
     partSize: 5 * 1024 * 1024,
-  })
+  });
 
   Readable.from(fileBuffer).pipe(passThrough);
 
-  await upload.done()
-
+  await upload.done();
 
   return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 };
