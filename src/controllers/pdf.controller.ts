@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { generatePDF } from "../services/pdf.service";
 import path from 'path';
 
-export const handlePDFRequest = async (
+export const PDFController = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -19,7 +19,7 @@ export const handlePDFRequest = async (
     const fileName = path.basename(filePath);
 
     res.status(200).json({
-      message: '✅ PDF создан и сохранён',
+      message: '✅ PDF is created and stored',
       file: fileName,
       path: filePath
     });

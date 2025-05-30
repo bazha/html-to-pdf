@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { handlePDFRequest } from '../controllers/pdf.controller';
+import { PDFController } from '../controllers/pdf.controller';
+import { validateHtml } from '../middlewares/validate-html.middleware';
 
 const router = Router();
 
-router.post('/pdf', handlePDFRequest);
+router.post('/pdf', validateHtml, PDFController);
 
 export default router;
