@@ -14,6 +14,7 @@ A microservice that generates PDFs from HTML using Puppeteer and uploads files t
 - HTML input validation middleware  
 - Built with TypeScript and Express
 - Uses BullMQ as the task queue to handle asynchronous PDF generation and uploading operations.
+- GET `/pdf/:jobId/url` endpoint to fetch a cached presigned AWS S3 URL for the generated PDF by job ID, enabling secure and efficient PDF access.
 
 ---
 
