@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { PDFController } from '../controllers/pdf.controller';
+import { generatePdf, getPdfUrlByJobId } from '../controllers/pdf.controller';
 import { validateHtml } from '../middlewares/validate-html.middleware';
 
 const router = Router();
 
-router.post('/pdf', validateHtml, PDFController);
+router.post('/pdf', validateHtml, generatePdf);
+router.get('/pdf/:jobId/url', getPdfUrlByJobId);
 
 export default router;
