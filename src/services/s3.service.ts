@@ -4,9 +4,9 @@ import { Readable, PassThrough } from "stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { s3 } from "../config/s3.config";
-import "dotenv/config";
+import { env } from "../config/env";
 
-const S3_BUCKET = process.env.AWS_S3_BUCKET!;
+const S3_BUCKET = env.AWS_S3_BUCKET;
 
 const uploadPdfToS3 = async (
   fileBuffer: Buffer,

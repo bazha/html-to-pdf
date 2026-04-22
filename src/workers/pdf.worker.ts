@@ -24,5 +24,9 @@ export const pdfWorker = new Worker(
 );
 
 pdfWorker.on("error", (err) => {
-  console.error("[PdfWorker] Worker error:", err);
+  console.error("[PdfWorker][error] Worker error:", err);
+});
+
+pdfWorker.on("failed", (job, err) => {
+  console.error(`[PdfWorker][failed] Job ${job?.id} failed:`, err);
 });

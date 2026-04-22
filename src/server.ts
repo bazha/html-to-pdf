@@ -1,8 +1,9 @@
+import { env } from './config/env';
 import app from './app';
 import { pdfWorker } from './workers/pdf.worker';
 import { closeBrowser } from './services/pdf.service';
 
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running at http://localhost:${PORT}`);
