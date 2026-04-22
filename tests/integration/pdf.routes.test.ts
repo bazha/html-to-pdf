@@ -48,7 +48,7 @@ describe("PDF routes", () => {
     const res = await request(app)
       .post("/markdown")
       .send({ content: "# Hello\n\nThis is **markdown**" })
-      .expect(200);
+      .expect(202);
 
     expect(res.body.file).toBeTruthy();
     expect(res.body.jobId).toBe("job-1");

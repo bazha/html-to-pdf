@@ -9,6 +9,8 @@ const envSchema = z.object({
   REDIS_HOST: z.string().min(1).default('localhost'),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   PORT: z.coerce.number().int().positive().default(3000),
+  BULL_BOARD_USER: z.string().min(1).optional(),
+  BULL_BOARD_PASSWORD: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
