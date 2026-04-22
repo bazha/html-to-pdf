@@ -7,15 +7,10 @@ export const pdfWorker = new Worker(
   "pdfGeneration",
   async (job: Job) => {
     const { html, fileName } = job.data;
-    try {
-      const pdfBuffer = await generatePDFBuffer(html);
-      const s3Url = await uploadPdfToS3(pdfBuffer, fileName);
+    const pdfBuffer = await generatePDFBuffer(html);
+    const key = await uploadPdfToS3(pdfBuffer, fileName);
 
-      return { s3Url };
-    } catch (error: any) {
-      console.error("Worker error:", error);
-      return { success: false, error: error.message };
-    }
+    return { key, fileSize: pdfBuffer.length };
   },
   {
     connection: redisClient,
@@ -29,5 +24,5 @@ export const pdfWorker = new Worker(
 );
 
 pdfWorker.on("error", (err) => {
-  console.error(err);
+  console.error("[PdfWorker] Worker error:", err);
 });

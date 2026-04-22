@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { generatePdf, getPdfUrlByJobId } from '../controllers/pdf.controller';
-import { validateHtml } from '../middlewares/validate-html.middleware';
+import { validateContent } from '../middlewares/validate-content.middleware';
 
 const router = Router();
 
-router.post('/pdf', validateHtml, generatePdf);
-router.get('/pdf/:jobId/url', getPdfUrlByJobId);
+for (const prefix of ['/pdf', '/markdown']) {
+  router.post(prefix, validateContent, generatePdf);
+  router.get(`${prefix}/:jobId/url`, getPdfUrlByJobId);
+}
 
 export default router;

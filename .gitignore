@@ -2,3 +2,14 @@
 /dist
 /PDFs
 .env
+
+# macOS
+.DS_Store
+
+# Local Claude Code settings
+.claude/
+
+# Ad-hoc manual test scripts
+/test-*.js
+/test-*.md
+/test*.pdf
