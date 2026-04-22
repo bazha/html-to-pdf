@@ -38,9 +38,21 @@ const getPdfUrlByJobId = async (
     return;
   }
 
-  const { key } = job.returnvalue || {};
+  const state = await job.getState();
+
+  if (state === "failed") {
+    res.status(410).json({ error: "Job failed", reason: job.failedReason });
+    return;
+  }
+
+  if (state !== "completed") {
+    res.status(202).json({ status: state });
+    return;
+  }
+
+  const key = job.returnvalue?.key;
   if (!key) {
-    res.status(500).json({ error: "No key in job return value" });
+    res.status(500).json({ error: "Completed job is missing S3 key" });
     return;
   }
 

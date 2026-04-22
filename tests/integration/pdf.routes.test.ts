@@ -7,7 +7,10 @@ const redisCache = vi.hoisted(() => new Map<string, string>());
 vi.mock("../../src/queues/queue", () => ({
   pdfQueue: {
     add: vi.fn().mockResolvedValue({ id: "job-1" }),
-    getJob: vi.fn().mockResolvedValue({ returnvalue: { key: "pdfs/test.pdf" } }),
+    getJob: vi.fn().mockResolvedValue({
+      returnvalue: { key: "pdfs/test.pdf" },
+      getState: vi.fn().mockResolvedValue("completed"),
+    }),
   },
 }));
 
