@@ -1,6 +1,6 @@
 # Changes
 
-This session ran two passes over the codebase: a bug-fix pass driven by a code audit, and a readability pass. Each change below includes the reason it was made.
+This log covers three passes over the codebase: a bug-fix pass driven by a code audit, a readability pass, and an operational-hardening pass that added CI and retry policy. Each change below includes the reason it was made.
 
 ---
 
@@ -107,7 +107,31 @@ In-flight requests could be abandoned when `process.exit(0)` fired.
 
 ---
 
-## Files changed (both rounds)
+## Round 3 — Operational hardening (CI + retries)
+
+### Failed jobs died on the first try
+After Round 1 stopped the worker from swallowing errors, BullMQ correctly marked failed jobs as `failed` — but the queue had no retry policy, so a transient S3 or Puppeteer flake became a permanent failure. The previous silent-success behaviour had been hiding the same outcome; removing it made the gap visible.
+
+**Fix:** `defaultJobOptions` on the queue now sets `attempts: 3` with `backoff: { type: 'exponential', delay: 2000 }`. Transient failures retry at roughly 2 s, 4 s before the job is marked failed. `src/queues/queue.ts`.
+
+### No automated checks on push / PR
+Every regression caught in Rounds 1 and 2 could have slipped back in unnoticed — there was no typecheck script, no CI, and the test suite was only ever run manually.
+
+**Fix:** Added `.github/workflows/ci.yml` running `npm run typecheck` and `npm test` on push and PR to `main` and `dev`. `PUPPETEER_SKIP_DOWNLOAD=true` at the workflow level avoids pulling Chromium on every run since the test suite mocks Puppeteer.
+
+### No npm typecheck script
+`tsc --noEmit` had to be invoked by hand. Easy to forget, impossible for CI to standardise on.
+
+**Fix:** Added `"typecheck": "tsc --noEmit"` to `package.json` scripts. CI invokes `npm run typecheck`.
+
+### Type error surfaced by the first typecheck run
+Running the new typecheck script immediately caught a pre-existing issue: in `getPdfUrlByJobId`, `req.params.jobId` was typed as `string | string[]` (Express v5 default) but `pdfQueue.getJob` wants `string`. The mismatch had been silently compiling because no CI step enforced it.
+
+**Fix:** Typed the request as `Request<{ jobId: string }>` so `jobId` narrows to `string`. `src/controllers/pdf.controller.ts`.
+
+---
+
+## Files changed (all rounds)
 
 - `src/controllers/pdf.controller.ts`
 - `src/workers/pdf.worker.ts`
@@ -118,12 +142,15 @@ In-flight requests could be abandoned when `process.exit(0)` fired.
 - `src/services/markdown.service.ts`
 - `src/services/pdf.service.ts`
 - `src/services/s3.service.ts`
+- `src/queues/queue.ts`
 - `src/middlewares/error-handler.ts`
 - `src/server.ts`
 - `tests/integration/pdf.routes.test.ts`
 - `tests/unit/pdf.service.test.ts`
+- `package.json` — `typecheck` script
+- `.github/workflows/ci.yml` (new)
 - `SERVICES.md`, `SERVICES_SIMPLE.md`, `FACTORY_PATTERNS.md`, `NAMING_CONVENTION.md` (deleted)
 
 ## Verification
 
-`npm test` — 9/9 passing. `npx tsc --noEmit` — clean.
+`npm run typecheck` — clean. `npm test` — 9/9 passing. CI runs both on push and PR.
