@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 export const errorHandler = (
   err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction,
 ): void => {
-  console.error('[ErrorHandler][errorHandler] Unhandled error:', err);
+  const log = req.log ?? logger;
+  log.error({ err }, '[ErrorHandler][errorHandler] unhandled error');
   res.status(500).json({ error: 'Internal Server Error' });
 };

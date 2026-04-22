@@ -9,10 +9,19 @@ const generatePdf = async (req: Request, res: Response): Promise<void> => {
   const fileName = `document-${Date.now()}.pdf`;
 
   const { html, detectedType } = generateHtmlFromAnyContent(content);
-  const job = await pdfQueue.add("generatePdf", { html, fileName });
+  const job = await pdfQueue.add("generatePdf", {
+    html,
+    fileName,
+    reqId: req.id,
+  });
 
-  res.status(200).json({
-    message: "✅ PDF is created and stored",
+  req.log.info(
+    { jobId: job.id, fileName, detectedType },
+    "[PdfController][generatePdf] job enqueued",
+  );
+
+  res.status(202).json({
+    message: "PDF generation accepted",
     jobId: job.id,
     file: fileName,
     detectedType,
