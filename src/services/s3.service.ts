@@ -6,18 +6,19 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3 } from "../config/s3.config";
 import "dotenv/config";
 
+const S3_BUCKET = process.env.AWS_S3_BUCKET!;
+
 const uploadPdfToS3 = async (
   fileBuffer: Buffer,
   filename: string
 ): Promise<string> => {
-  const bucket = process.env.AWS_S3_BUCKET!;
   const key = `pdfs/${filename}`;
   const passThrough = new PassThrough();
 
   const upload = new Upload({
     client: s3,
     params: {
-      Bucket: bucket,
+      Bucket: S3_BUCKET,
       Key: key,
       Body: passThrough,
       ContentType: "application/pdf",
@@ -39,16 +40,13 @@ const getPresignedUrlFromS3 = async (
 ): Promise<string> => {
   try {
     const command = new GetObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET,
+      Bucket: S3_BUCKET,
       Key: key,
     });
-    const url = await getSignedUrl(s3, command, {
-      expiresIn: expiresInSeconds,
-    });
-    return url;
+    return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
   } catch (err) {
     console.error(
-      "[S3Utils][getPresignedUrlFromS3] Error generating pre-signed URL:",
+      "[S3Service][getPresignedUrlFromS3] Error generating pre-signed URL:",
       err
     );
     throw new Error("Failed to generate pre-signed URL");
