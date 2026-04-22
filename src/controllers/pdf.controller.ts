@@ -19,7 +19,10 @@ const generatePdf = async (req: Request, res: Response): Promise<void> => {
   });
 };
 
-const getPdfUrlByJobId = async (req: Request, res: Response): Promise<void> => {
+const getPdfUrlByJobId = async (
+  req: Request<{ jobId: string }>,
+  res: Response
+): Promise<void> => {
   const { jobId } = req.params;
   const cacheKey = `pdf:url:${jobId}`;
 
