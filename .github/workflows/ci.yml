@@ -6,18 +6,29 @@ on:
   pull_request:
     branches: [main, dev]
 
+permissions:
+  contents: read
+
 env:
   PUPPETEER_SKIP_DOWNLOAD: 'true'
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
