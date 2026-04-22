@@ -9,9 +9,6 @@ const envSchema = z.object({
   REDIS_HOST: z.string().min(1).default('localhost'),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   PORT: z.coerce.number().int().positive().default(3000),
-  LOG_LEVEL: z
-    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-    .default(process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
   BULL_BOARD_USER: z.string().min(1).optional(),
   BULL_BOARD_PASSWORD: z.string().min(1).optional(),
 });
