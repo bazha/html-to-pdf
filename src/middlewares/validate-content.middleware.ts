@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { RequestHandler } from 'express';
 import { z } from 'zod';
 
 const contentSchema = z.object({
@@ -7,7 +7,7 @@ const contentSchema = z.object({
     .max(50000, { message: 'Content too large' }),
 });
 
-export const validateContent: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+export const validateContent: RequestHandler = (req, res, next) => {
   const validation = contentSchema.safeParse(req.body);
 
   if (!validation.success) {
