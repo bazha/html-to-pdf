@@ -26,5 +26,14 @@ describe("content.service", () => {
     expect(result.detectedType).toBe("markdown");
     expect(result.html).toContain("<ul");
   });
+
+  it("treats markdown with an inline HTML tag as markdown (not HTML)", () => {
+    const markdown = "# Heading\n\nA line with a <br> inline tag and **bold**.";
+    const result = generateHtmlFromAnyContent(markdown);
+
+    expect(result.detectedType).toBe("markdown");
+    expect(result.html).toContain("<!DOCTYPE html>");
+    expect(result.html).toContain("<h1");
+  });
 });
 

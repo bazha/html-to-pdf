@@ -1,4 +1,4 @@
-  import { randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { RequestHandler } from 'express';
 import type { Logger } from 'pino';
 import { logger } from '../utils/logger';

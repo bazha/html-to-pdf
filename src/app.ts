@@ -7,9 +7,9 @@ import { setupQueueDashboard } from './monitoring/queues/bull-board';
 const app = express();
 
 app.use(requestContext);
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '200kb' }));
 app.use('/', pdfRoutes);
-app.use(errorHandler);
 setupQueueDashboard(app);
+app.use(errorHandler);
 
 export default app;

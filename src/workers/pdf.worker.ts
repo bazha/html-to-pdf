@@ -19,13 +19,11 @@ export const pdfWorker = new Worker(
   },
   {
     connection: redisClient,
-    removeOnComplete: {
-      count: 100,
-    },
-    removeOnFail: {
-      age: 3 * 24 * 3600,
-    },
-  }
+    // One Puppeteer page at a time per worker — single shared browser.
+    concurrency: 1,
+    removeOnComplete: { count: 100 },
+    removeOnFail: { age: 3 * 24 * 3600 },
+  },
 );
 
 pdfWorker.on("error", (err) => {

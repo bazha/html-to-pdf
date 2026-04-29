@@ -80,11 +80,13 @@ describe("PDF routes", () => {
     const jobId = "job-123";
 
     const first = await request(app).get(`/pdf/${jobId}/url`).expect(200);
+    expect(first.body.status).toBe("completed");
     expect(first.body.url).toBe("https://example.com/pdfs/test.pdf");
     expect(first.body.cached).toBe(false);
     expect(pdfQueue.getJob).toHaveBeenCalledTimes(1);
 
     const second = await request(app).get(`/pdf/${jobId}/url`).expect(200);
+    expect(second.body.status).toBe("completed");
     expect(second.body.url).toBe("https://example.com/pdfs/test.pdf");
     expect(second.body.cached).toBe(true);
     // getJob should not be called again because of cache
@@ -98,25 +100,25 @@ describe("PDF routes", () => {
     expect(res.body.error).toContain("missing");
   });
 
-  it("GET /pdf/:jobId/url - returns 410 when job is failed", async () => {
+  it("GET /pdf/:jobId/url - returns failed status in body when job failed", async () => {
     (pdfQueue.getJob as any).mockResolvedValueOnce({
       returnvalue: undefined,
       failedReason: "Puppeteer crashed",
       getState: vi.fn().mockResolvedValue("failed"),
     });
 
-    const res = await request(app).get("/pdf/failed-job/url").expect(410);
-    expect(res.body.error).toBe("Job failed");
+    const res = await request(app).get("/pdf/failed-job/url").expect(200);
+    expect(res.body.status).toBe("failed");
     expect(res.body.reason).toBe("Puppeteer crashed");
   });
 
-  it("GET /pdf/:jobId/url - returns 202 when job is still active", async () => {
+  it("GET /pdf/:jobId/url - returns active status in body when job is still active", async () => {
     (pdfQueue.getJob as any).mockResolvedValueOnce({
       returnvalue: undefined,
       getState: vi.fn().mockResolvedValue("active"),
     });
 
-    const res = await request(app).get("/pdf/active-job/url").expect(202);
+    const res = await request(app).get("/pdf/active-job/url").expect(200);
     expect(res.body.status).toBe("active");
   });
 

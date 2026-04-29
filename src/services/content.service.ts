@@ -7,7 +7,6 @@ interface ContentResult {
   detectedType: ContentType;
 }
 
-/** Detects HTML vs Markdown and returns normalized HTML. */
 export const generateHtmlFromAnyContent = (content: string): ContentResult => {
   if (!content || typeof content !== "string") {
     throw new Error("Content must be a non-empty string");
@@ -22,30 +21,22 @@ export const generateHtmlFromAnyContent = (content: string): ContentResult => {
   return { html: generateHtmlFromMarkdown(content), detectedType: "markdown" };
 };
 
-const htmlIndicators = [
-  /^<!DOCTYPE/i,
-  /^<html/i,
-  /^<head/i,
-  /^<body/i,
-  /<[^>]+>/,
-  /&[a-zA-Z]+;/,
-];
-
 const markdownIndicators = [
-  /^#\s/,
-  /^\*\s/,
-  /^\d+\.\s/,
-  /^\*\*.*\*\*/,
-  /^\*.*\*/,
-  /^>/,
-  /^```/,
-  /^\|.*\|/,
+  /^#{1,6}\s/m,
+  /^\s*[*\-+]\s/m,
+  /^\s*\d+\.\s/m,
+  /\*\*[^*]+\*\*/,
+  /(^|\s)_[^_]+_(\s|$)/,
+  /^\s*>\s/m,
+  /^```/m,
+  /^\s*\|.*\|\s*$/m,
+  /\[[^\]]+\]\([^)]+\)/,
 ];
 
 const detectContentType = (content: string): ContentType => {
   const trimmed = content.trim();
 
-  if (htmlIndicators.some((pattern) => pattern.test(trimmed))) return "html";
+  if (trimmed.startsWith("<")) return "html";
   if (markdownIndicators.some((pattern) => pattern.test(trimmed))) return "markdown";
   return "html";
 };

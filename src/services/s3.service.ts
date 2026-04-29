@@ -1,6 +1,4 @@
-import { Upload } from "@aws-sdk/lib-storage";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { Readable, PassThrough } from "stream";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { s3 } from "../config/s3.config";
@@ -11,39 +9,29 @@ const S3_BUCKET = env.AWS_S3_BUCKET;
 
 const uploadPdfToS3 = async (
   fileBuffer: Buffer,
-  filename: string
+  filename: string,
 ): Promise<string> => {
   const key = `pdfs/${filename}`;
-  const passThrough = new PassThrough();
 
-  const upload = new Upload({
-    client: s3,
-    params: {
+  await s3.send(
+    new PutObjectCommand({
       Bucket: S3_BUCKET,
       Key: key,
-      Body: passThrough,
+      Body: fileBuffer,
       ContentType: "application/pdf",
-    },
-    queueSize: 4,
-    partSize: 5 * 1024 * 1024,
-  });
-
-  Readable.from(fileBuffer).pipe(passThrough);
-
-  await upload.done();
+      ContentLength: fileBuffer.length,
+    }),
+  );
 
   return key;
 };
 
 const getPresignedUrlFromS3 = async (
   key: string,
-  expiresInSeconds = 60 * 10
+  expiresInSeconds = 60 * 10,
 ): Promise<string> => {
   try {
-    const command = new GetObjectCommand({
-      Bucket: S3_BUCKET,
-      Key: key,
-    });
+    const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
     return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
   } catch (err) {
     logger.error(

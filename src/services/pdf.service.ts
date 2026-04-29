@@ -1,11 +1,13 @@
 import puppeteer, { Browser } from "puppeteer";
 
+const SET_CONTENT_TIMEOUT_MS = 30_000;
+const PDF_RENDER_TIMEOUT_MS = 30_000;
+
 let browserPromise: Promise<Browser> | null = null;
 
 const getBrowser = (): Promise<Browser> => {
   if (!browserPromise) {
     browserPromise = puppeteer.launch({ args: ["--no-sandbox"] }).catch((err) => {
-      // Clear cache so the next call retries instead of re-rejecting the same promise.
       browserPromise = null;
       throw err;
     });
@@ -18,8 +20,15 @@ export const generatePDFBuffer = async (htmlContent: string): Promise<Buffer> =>
   const page = await browser.newPage();
 
   try {
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+    await page.setContent(htmlContent, {
+      waitUntil: "domcontentloaded",
+      timeout: SET_CONTENT_TIMEOUT_MS,
+    });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      timeout: PDF_RENDER_TIMEOUT_MS,
+    });
     return Buffer.from(pdfBuffer);
   } finally {
     await page.close();
