@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-// Hoisted cache for redis mock
+const { bullBoardMockFactory, s3ServiceMockFactory } = await vi.hoisted(
+  async () => await import("./mock-factories"),
+);
+
+// Hoisted state for redis + queue mocks specific to this file's scenarios.
 const redisCache = vi.hoisted(() => new Map<string, string>());
+const redisPing = vi.hoisted(() => vi.fn(async () => "PONG"));
 
 vi.mock("../../src/queues/queue", () => ({
   pdfQueue: {
@@ -14,10 +19,7 @@ vi.mock("../../src/queues/queue", () => ({
   },
 }));
 
-// Avoid initializing bull-board with mock queue
-vi.mock("../../src/monitoring/queues/bull-board", () => ({
-  setupQueueDashboard: () => {},
-}));
+vi.mock("../../src/monitoring/queues/bull-board", bullBoardMockFactory);
 
 vi.mock("../../src/config/redis.config", () => ({
   redisClient: {
@@ -26,12 +28,11 @@ vi.mock("../../src/config/redis.config", () => ({
       redisCache.set(key, value);
       return "OK";
     }),
+    ping: redisPing,
   },
 }));
 
-vi.mock("../../src/services/s3.service", () => ({
-  getPresignedUrlFromS3: vi.fn(async (key: string) => `https://example.com/${key}`),
-}));
+vi.mock("../../src/services/s3.service", s3ServiceMockFactory);
 
 // Import app after mocks
 import app from "../../src/app";
@@ -80,11 +81,13 @@ describe("PDF routes", () => {
     const jobId = "job-123";
 
     const first = await request(app).get(`/pdf/${jobId}/url`).expect(200);
+    expect(first.body.status).toBe("completed");
     expect(first.body.url).toBe("https://example.com/pdfs/test.pdf");
     expect(first.body.cached).toBe(false);
     expect(pdfQueue.getJob).toHaveBeenCalledTimes(1);
 
     const second = await request(app).get(`/pdf/${jobId}/url`).expect(200);
+    expect(second.body.status).toBe("completed");
     expect(second.body.url).toBe("https://example.com/pdfs/test.pdf");
     expect(second.body.cached).toBe(true);
     // getJob should not be called again because of cache
@@ -98,25 +101,25 @@ describe("PDF routes", () => {
     expect(res.body.error).toContain("missing");
   });
 
-  it("GET /pdf/:jobId/url - returns 410 when job is failed", async () => {
+  it("GET /pdf/:jobId/url - returns 422 with sanitized reason when job failed", async () => {
     (pdfQueue.getJob as any).mockResolvedValueOnce({
       returnvalue: undefined,
       failedReason: "Puppeteer crashed",
       getState: vi.fn().mockResolvedValue("failed"),
     });
 
-    const res = await request(app).get("/pdf/failed-job/url").expect(410);
-    expect(res.body.error).toBe("Job failed");
-    expect(res.body.reason).toBe("Puppeteer crashed");
+    const res = await request(app).get("/pdf/failed-job/url").expect(422);
+    expect(res.body.status).toBe("failed");
+    expect(res.body.reason).toBe("PDF generation failed");
   });
 
-  it("GET /pdf/:jobId/url - returns 202 when job is still active", async () => {
+  it("GET /pdf/:jobId/url - returns active status in body when job is still active", async () => {
     (pdfQueue.getJob as any).mockResolvedValueOnce({
       returnvalue: undefined,
       getState: vi.fn().mockResolvedValue("active"),
     });
 
-    const res = await request(app).get("/pdf/active-job/url").expect(202);
+    const res = await request(app).get("/pdf/active-job/url").expect(200);
     expect(res.body.status).toBe("active");
   });
 
@@ -129,4 +132,36 @@ describe("PDF routes", () => {
     const res = await request(app).get("/pdf/no-key/url").expect(500);
     expect(res.body.error).toContain("missing S3 key");
   });
+
+  it("GET /health - returns 200", async () => {
+    const res = await request(app).get("/health").expect(200);
+    expect(res.body.status).toBe("ok");
+  });
+
+  it("GET /ready - returns 200 when redis ping succeeds", async () => {
+    redisPing.mockResolvedValueOnce("PONG");
+    const res = await request(app).get("/ready").expect(200);
+    expect(res.body.status).toBe("ready");
+  });
+
+  it("GET /ready - returns 503 when redis ping fails", async () => {
+    redisPing.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+    const res = await request(app).get("/ready").expect(503);
+    expect(res.body.status).toBe("not ready");
+  });
+
+  it("POST /markdown - strips <script> from sanitized HTML before enqueue", async () => {
+    await request(app)
+      .post("/markdown")
+      .send({
+        content:
+          "# Hi\n\n<script>fetch('//evil')</script>\n\n<img src=\"file:///etc/passwd\">",
+      })
+      .expect(202);
+
+    const enqueued = (pdfQueue.add as any).mock.calls[0][1];
+    expect(enqueued.html).not.toContain("<script");
+    expect(enqueued.html).not.toContain("file:");
+  });
 });
+

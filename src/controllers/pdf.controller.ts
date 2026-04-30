@@ -1,12 +1,22 @@
 import { Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { pdfQueue } from "../queues/queue";
 import { redisClient } from "../config/redis.config";
-import { getPresignedUrlFromS3 } from "../services/s3.service";
+import {
+  getPresignedUrlFromS3,
+  PRESIGNED_URL_EXPIRY_SECONDS,
+} from "../services/s3.service";
 import { generateHtmlFromAnyContent } from "../services/content.service";
+import type { ContentBody } from "../middlewares/validate-content.middleware";
 
-const generatePdf = async (req: Request, res: Response): Promise<void> => {
+const URL_CACHE_TTL_SECONDS = PRESIGNED_URL_EXPIRY_SECONDS - 60;
+
+const generatePdf = async (
+  req: Request<unknown, unknown, ContentBody>,
+  res: Response,
+): Promise<void> => {
   const { content } = req.body;
-  const fileName = `document-${Date.now()}.pdf`;
+  const fileName = `${randomUUID()}.pdf`;
 
   const { html, detectedType } = generateHtmlFromAnyContent(content);
   const job = await pdfQueue.add("generatePdf", {
@@ -30,14 +40,14 @@ const generatePdf = async (req: Request, res: Response): Promise<void> => {
 
 const getPdfUrlByJobId = async (
   req: Request<{ jobId: string }>,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { jobId } = req.params;
   const cacheKey = `pdf:url:${jobId}`;
 
   const cachedUrl = await redisClient.get(cacheKey);
   if (cachedUrl) {
-    res.status(200).json({ url: cachedUrl, cached: true });
+    res.status(200).json({ status: "completed", url: cachedUrl, cached: true });
     return;
   }
 
@@ -50,12 +60,16 @@ const getPdfUrlByJobId = async (
   const state = await job.getState();
 
   if (state === "failed") {
-    res.status(410).json({ error: "Job failed", reason: job.failedReason });
+    req.log.warn(
+      { jobId, failedReason: job.failedReason },
+      "[PdfController][getPdfUrlByJobId] job failed",
+    );
+    res.status(422).json({ status: "failed", reason: "PDF generation failed" });
     return;
   }
 
   if (state !== "completed") {
-    res.status(202).json({ status: state });
+    res.status(200).json({ status: state });
     return;
   }
 
@@ -66,9 +80,9 @@ const getPdfUrlByJobId = async (
   }
 
   const signedUrl = await getPresignedUrlFromS3(key);
-  await redisClient.setex(cacheKey, 300, signedUrl);
+  await redisClient.setex(cacheKey, URL_CACHE_TTL_SECONDS, signedUrl);
 
-  res.status(200).json({ url: signedUrl, cached: false });
+  res.status(200).json({ status: "completed", url: signedUrl, cached: false });
 };
 
 export { generatePdf, getPdfUrlByJobId };
