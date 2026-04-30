@@ -15,5 +15,3 @@ export const logger = pino({
   level: resolveLevel(),
   base: undefined,
 });
-
-export type Logger = typeof logger;

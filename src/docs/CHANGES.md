@@ -68,7 +68,7 @@ Integration test needed to assert the new `jobId` field; unit test mock for Pupp
 ### `AWS_S3_BUCKET` was read twice, inconsistently
 One call site asserted non-null (`!`), the other didn't. A missing env var would silently produce a `undefined` bucket in one code path.
 
-**Fix:** `const S3_BUCKET = process.env.AWS_S3_BUCKET!` once at module scope, used everywhere. `src/services/s3.service.ts`.
+**Fix:** `const S3_BUCKET = env.AWS_S3_BUCKET` once at module scope (env is the validated zod-parsed object), used everywhere. `src/services/s3.service.ts`.
 
 ### Redundant `try/catch + next(err)` in controller
 Express v5 auto-forwards async rejections to the error middleware. The try/catch added noise without safety — and in `getPdfUrlByJobId`, the Redis `get` was *outside* the try block, so an error there would crash the process.

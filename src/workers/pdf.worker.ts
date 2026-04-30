@@ -1,5 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { redisClient } from "../config/redis.config";
+import { PDF_QUEUE_NAME } from "../queues/queue";
 import { generatePDFBuffer } from "../services/pdf.service";
 import { uploadPdfToS3 } from "../services/s3.service";
 import { logger } from "../utils/logger";
@@ -18,7 +19,7 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
 };
 
 export const pdfWorker = new Worker(
-  "pdfGeneration",
+  PDF_QUEUE_NAME,
   async (job: Job) => {
     const { html, fileName, reqId } = job.data;
     const jobLog = logger.child({ reqId, jobId: job.id });

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+const { bullBoardMockFactory, s3ServiceMockFactory } = await vi.hoisted(
+  async () => await import("./mock-factories"),
+);
+
 vi.mock("../../src/queues/queue", () => ({
   pdfQueue: {
     add: vi.fn().mockResolvedValue({ id: "job-rl" }),
@@ -8,9 +12,7 @@ vi.mock("../../src/queues/queue", () => ({
   },
 }));
 
-vi.mock("../../src/monitoring/queues/bull-board", () => ({
-  setupQueueDashboard: () => {},
-}));
+vi.mock("../../src/monitoring/queues/bull-board", bullBoardMockFactory);
 
 vi.mock("../../src/config/redis.config", () => ({
   redisClient: {
@@ -20,10 +22,7 @@ vi.mock("../../src/config/redis.config", () => ({
   },
 }));
 
-vi.mock("../../src/services/s3.service", () => ({
-  getPresignedUrlFromS3: vi.fn(),
-  PRESIGNED_URL_EXPIRY_SECONDS: 600,
-}));
+vi.mock("../../src/services/s3.service", s3ServiceMockFactory);
 
 import app from "../../src/app";
 

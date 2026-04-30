@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-// Hoisted cache for redis mock
+const { bullBoardMockFactory, s3ServiceMockFactory } = await vi.hoisted(
+  async () => await import("./mock-factories"),
+);
+
+// Hoisted state for redis + queue mocks specific to this file's scenarios.
 const redisCache = vi.hoisted(() => new Map<string, string>());
+const redisPing = vi.hoisted(() => vi.fn(async () => "PONG"));
 
 vi.mock("../../src/queues/queue", () => ({
   pdfQueue: {
@@ -14,12 +19,7 @@ vi.mock("../../src/queues/queue", () => ({
   },
 }));
 
-// Avoid initializing bull-board with mock queue
-vi.mock("../../src/monitoring/queues/bull-board", () => ({
-  setupQueueDashboard: () => {},
-}));
-
-const redisPing = vi.hoisted(() => vi.fn(async () => "PONG"));
+vi.mock("../../src/monitoring/queues/bull-board", bullBoardMockFactory);
 
 vi.mock("../../src/config/redis.config", () => ({
   redisClient: {
@@ -32,10 +32,7 @@ vi.mock("../../src/config/redis.config", () => ({
   },
 }));
 
-vi.mock("../../src/services/s3.service", () => ({
-  getPresignedUrlFromS3: vi.fn(async (key: string) => `https://example.com/${key}`),
-  PRESIGNED_URL_EXPIRY_SECONDS: 600,
-}));
+vi.mock("../../src/services/s3.service", s3ServiceMockFactory);
 
 // Import app after mocks
 import app from "../../src/app";
@@ -114,7 +111,6 @@ describe("PDF routes", () => {
     const res = await request(app).get("/pdf/failed-job/url").expect(422);
     expect(res.body.status).toBe("failed");
     expect(res.body.reason).toBe("PDF generation failed");
-    expect(res.body.reason).not.toContain("Puppeteer");
   });
 
   it("GET /pdf/:jobId/url - returns active status in body when job is still active", async () => {
