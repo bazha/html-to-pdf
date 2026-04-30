@@ -15,7 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.820.0",
     "@aws-sdk/s3-request-presigner": "^3.821.0",
-    "@bull-board/express": "^6.9.6",
+    "@bull-board/express": "^7.0.0",
     "bullmq": "^5.53.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
