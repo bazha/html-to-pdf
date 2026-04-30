@@ -1,4 +1,5 @@
 import puppeteer, { Browser } from "puppeteer";
+import { logger } from "../utils/logger";
 
 const SET_CONTENT_TIMEOUT_MS = 30_000;
 const PDF_RENDER_TIMEOUT_MS = 30_000;
@@ -15,7 +16,7 @@ const getBrowser = (): Promise<Browser> => {
   return browserPromise;
 };
 
-export const generatePDFBuffer = async (htmlContent: string): Promise<Buffer> => {
+export const generatePDFBuffer = async (htmlContent: string): Promise<Uint8Array> => {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
@@ -24,14 +25,18 @@ export const generatePDFBuffer = async (htmlContent: string): Promise<Buffer> =>
       waitUntil: "domcontentloaded",
       timeout: SET_CONTENT_TIMEOUT_MS,
     });
-    const pdfBuffer = await page.pdf({
+    return await page.pdf({
       format: "A4",
       printBackground: true,
       timeout: PDF_RENDER_TIMEOUT_MS,
     });
-    return Buffer.from(pdfBuffer);
   } finally {
-    await page.close();
+    await page.close().catch((closeErr) => {
+      logger.warn(
+        { err: closeErr },
+        "[PdfService][generatePDFBuffer] page.close() failed",
+      );
+    });
   }
 };
 

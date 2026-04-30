@@ -19,8 +19,12 @@ const shutdown = async (signal: string): Promise<void> => {
 
   const work = (async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await pdfWorker.close();
-    await closeBrowser();
+    await pdfWorker.close().catch((err) => {
+      logger.warn({ err }, 'pdfWorker.close() failed during shutdown');
+    });
+    await closeBrowser().catch((err) => {
+      logger.warn({ err }, 'closeBrowser() failed during shutdown');
+    });
   })();
 
   const timeout = new Promise<'timeout'>((resolve) =>

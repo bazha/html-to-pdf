@@ -2,11 +2,14 @@ import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { pdfQueue } from "../queues/queue";
 import { redisClient } from "../config/redis.config";
-import { getPresignedUrlFromS3 } from "../services/s3.service";
+import {
+  getPresignedUrlFromS3,
+  PRESIGNED_URL_EXPIRY_SECONDS,
+} from "../services/s3.service";
 import { generateHtmlFromAnyContent } from "../services/content.service";
 import type { ContentBody } from "../middlewares/validate-content.middleware";
 
-const URL_CACHE_TTL_SECONDS = 300;
+const URL_CACHE_TTL_SECONDS = PRESIGNED_URL_EXPIRY_SECONDS - 60;
 
 const generatePdf = async (
   req: Request<unknown, unknown, ContentBody>,
@@ -57,7 +60,11 @@ const getPdfUrlByJobId = async (
   const state = await job.getState();
 
   if (state === "failed") {
-    res.status(200).json({ status: "failed", reason: job.failedReason });
+    req.log.warn(
+      { jobId, failedReason: job.failedReason },
+      "[PdfController][getPdfUrlByJobId] job failed",
+    );
+    res.status(422).json({ status: "failed", reason: "PDF generation failed" });
     return;
   }
 

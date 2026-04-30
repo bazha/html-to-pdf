@@ -8,10 +8,6 @@ interface ContentResult {
 }
 
 export const generateHtmlFromAnyContent = (content: string): ContentResult => {
-  if (!content || typeof content !== "string") {
-    throw new Error("Content must be a non-empty string");
-  }
-
   const detectedType = detectContentType(content);
 
   if (detectedType === "html") {

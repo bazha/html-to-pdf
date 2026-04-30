@@ -7,8 +7,10 @@ import { logger } from "../utils/logger";
 
 const S3_BUCKET = env.AWS_S3_BUCKET;
 
+export const PRESIGNED_URL_EXPIRY_SECONDS = 600;
+
 const uploadPdfToS3 = async (
-  fileBuffer: Buffer,
+  fileBuffer: Uint8Array,
   filename: string,
 ): Promise<string> => {
   const key = `pdfs/${filename}`;
@@ -28,7 +30,7 @@ const uploadPdfToS3 = async (
 
 const getPresignedUrlFromS3 = async (
   key: string,
-  expiresInSeconds = 60 * 10,
+  expiresInSeconds = PRESIGNED_URL_EXPIRY_SECONDS,
 ): Promise<string> => {
   try {
     const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
