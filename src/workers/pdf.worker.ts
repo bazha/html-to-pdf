@@ -1,4 +1,4 @@
-import { Worker, Job } from "bullmq";
+import { Worker, Job, UnrecoverableError } from "bullmq";
 import { redisClient } from "../config/redis.config";
 import { PDF_QUEUE_NAME } from "../queues/queue";
 import { generatePDFBuffer } from "../services/pdf.service";
@@ -11,7 +11,7 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
   let timer: NodeJS.Timeout;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () => reject(new Error(`Job timed out after ${ms}ms`)),
+      () => reject(new UnrecoverableError(`Job timed out after ${ms}ms`)),
       ms,
     );
   });
@@ -31,6 +31,8 @@ export const pdfWorker = new Worker(
       return { key, fileSize: pdfBuffer.length };
     };
 
+    // Timeouts throw UnrecoverableError so BullMQ skips retries — a single
+    // bad job should not occupy the worker for attempts × JOB_TIMEOUT_MS.
     const result = await withTimeout(run(), JOB_TIMEOUT_MS);
     jobLog.info(
       { key: result.key, fileSize: result.fileSize },

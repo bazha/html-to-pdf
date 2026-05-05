@@ -2,12 +2,24 @@ import { describe, it, expect } from "vitest";
 import { generateHtmlFromAnyContent } from "../../src/services/content.service";
 
 describe("content.service", () => {
-  it("detects HTML content and returns as-is", () => {
+  it("detects HTML content, sanitizes and wraps in document", () => {
     const html = "<h1>Hello</h1><p>World</p>";
     const result = generateHtmlFromAnyContent(html);
 
     expect(result.detectedType).toBe("html");
-    expect(result.html).toBe(html);
+    expect(result.html).toContain("<!DOCTYPE html>");
+    expect(result.html).toContain("<h1>Hello</h1>");
+    expect(result.html).toContain("<p>World</p>");
+  });
+
+  it("strips <script> and external resource refs from HTML input", () => {
+    const html =
+      '<h1>Hi</h1><script>fetch("//evil")</script><iframe src="http://evil"></iframe>';
+    const result = generateHtmlFromAnyContent(html);
+
+    expect(result.detectedType).toBe("html");
+    expect(result.html).not.toContain("<script");
+    expect(result.html).not.toContain("<iframe");
   });
 
   it("detects markdown content and converts to HTML", () => {

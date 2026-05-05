@@ -3,7 +3,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { s3 } from "../config/s3.config";
 import { env } from "../config/env";
-import { logger } from "../utils/logger";
 
 const S3_BUCKET = env.AWS_S3_BUCKET;
 
@@ -32,16 +31,8 @@ const getPresignedUrlFromS3 = async (
   key: string,
   expiresInSeconds = PRESIGNED_URL_EXPIRY_SECONDS,
 ): Promise<string> => {
-  try {
-    const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
-    return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
-  } catch (err) {
-    logger.error(
-      { err, key },
-      "[S3Service][getPresignedUrlFromS3] error generating pre-signed URL",
-    );
-    throw new Error("Failed to generate pre-signed URL");
-  }
+  const command = new GetObjectCommand({ Bucket: S3_BUCKET, Key: key });
+  return getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 };
 
 export { uploadPdfToS3, getPresignedUrlFromS3 };

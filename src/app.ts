@@ -5,8 +5,13 @@ import { errorHandler } from './middlewares/error-handler';
 import { requestContext } from './middlewares/request-context.middleware';
 import { setupQueueDashboard } from './monitoring/queues/bull-board';
 import { redisClient } from './config/redis.config';
+import { env } from './config/env';
 
 const app = express();
+
+if (env.TRUST_PROXY_HOPS > 0) {
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
+}
 
 app.use(helmet());
 
