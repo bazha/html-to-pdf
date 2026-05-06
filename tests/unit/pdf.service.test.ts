@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => {
       setContent: vi.fn().mockResolvedValue(undefined),
       pdf: vi.fn().mockResolvedValue(pdfBuffer),
       close: vi.fn().mockResolvedValue(undefined),
+      setRequestInterception: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
     },
     pdfBuffer,
   };

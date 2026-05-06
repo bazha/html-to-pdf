@@ -16,11 +16,24 @@ const getBrowser = (): Promise<Browser> => {
   return browserPromise;
 };
 
+const ALLOWED_RESOURCE_SCHEMES = new Set(["data:", "about:"]);
+
 export const generatePDFBuffer = async (htmlContent: string): Promise<Uint8Array> => {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
   try {
+    await page.setRequestInterception(true);
+    page.on("request", (req) => {
+      const url = req.url();
+      const scheme = url.slice(0, url.indexOf(":") + 1).toLowerCase();
+      if (ALLOWED_RESOURCE_SCHEMES.has(scheme)) {
+        req.continue();
+      } else {
+        req.abort();
+      }
+    });
+
     await page.setContent(htmlContent, {
       waitUntil: "domcontentloaded",
       timeout: SET_CONTENT_TIMEOUT_MS,

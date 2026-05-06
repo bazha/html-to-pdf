@@ -10,15 +10,11 @@ export const contentSchema = z.object({
 
 export type ContentBody = z.infer<typeof contentSchema>;
 
-export const validateContent: RequestHandler = (req, res, next) => {
+export const validateContent: RequestHandler = (req, _res, next) => {
   const validation = contentSchema.safeParse(req.body);
-
   if (!validation.success) {
-    const errors = validation.error.errors.map((e) => e.message).join(', ');
-    res.status(400).json({ error: `Validation error: ${errors}` });
+    next(validation.error);
     return;
   }
-
-  req.body = validation.data;
   next();
 };

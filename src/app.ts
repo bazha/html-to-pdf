@@ -8,6 +8,14 @@ import { redisClient } from './config/redis.config';
 
 const app = express();
 
+// Read directly from process.env (not env.ts) so this module stays free of
+// env-validation side effects — tests mock redis/S3 to avoid loading env.ts
+// at all, and CI has no AWS creds to satisfy that schema.
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS);
+if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+  app.set('trust proxy', trustProxyHops);
+}
+
 app.use(helmet());
 
 app.get('/health', (_req, res) => {
