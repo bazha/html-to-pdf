@@ -5,12 +5,15 @@ import { errorHandler } from './middlewares/error-handler';
 import { requestContext } from './middlewares/request-context.middleware';
 import { setupQueueDashboard } from './monitoring/queues/bull-board';
 import { redisClient } from './config/redis.config';
-import { env } from './config/env';
 
 const app = express();
 
-if (env.TRUST_PROXY_HOPS > 0) {
-  app.set('trust proxy', env.TRUST_PROXY_HOPS);
+// Read directly from process.env (not env.ts) so this module stays free of
+// env-validation side effects — tests mock redis/S3 to avoid loading env.ts
+// at all, and CI has no AWS creds to satisfy that schema.
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS);
+if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+  app.set('trust proxy', trustProxyHops);
 }
 
 app.use(helmet());
