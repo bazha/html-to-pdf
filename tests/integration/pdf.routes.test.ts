@@ -17,19 +17,23 @@ vi.mock("../../src/queues/queue", () => ({
       getState: vi.fn().mockResolvedValue("completed"),
     }),
   },
+  PDF_QUEUE_NAME: "pdfGeneration",
+  PDF_JOB_NAME: "generatePdf",
 }));
 
 vi.mock("../../src/monitoring/queues/bull-board", bullBoardMockFactory);
 
 vi.mock("../../src/config/redis.config", () => ({
-  redisClient: {
+  appRedisClient: {
     get: vi.fn(async (key: string) => redisCache.get(key)?.toString() ?? null),
     setex: vi.fn(async (key: string, _ttl: number, value: string) => {
       redisCache.set(key, value);
       return "OK";
     }),
     ping: redisPing,
+    quit: vi.fn(async () => "OK"),
   },
+  bullmqConnection: { quit: vi.fn(async () => "OK") },
 }));
 
 vi.mock("../../src/services/s3.service", s3ServiceMockFactory);

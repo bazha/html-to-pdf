@@ -5,8 +5,12 @@ const SET_CONTENT_TIMEOUT_MS = 30_000;
 const PDF_RENDER_TIMEOUT_MS = 30_000;
 
 let browserPromise: Promise<Browser> | null = null;
+let closing = false;
 
 const getBrowser = (): Promise<Browser> => {
+  if (closing) {
+    return Promise.reject(new Error("[PdfService] browser is shutting down"));
+  }
   if (!browserPromise) {
     browserPromise = puppeteer.launch({ args: ["--no-sandbox"] }).catch((err) => {
       browserPromise = null;
@@ -54,9 +58,20 @@ export const generatePDFBuffer = async (htmlContent: string): Promise<Uint8Array
 };
 
 export const closeBrowser = async (): Promise<void> => {
+  // Set closing first so concurrent getBrowser() calls reject instead of
+  // launching a new browser that would leak past shutdown.
+  closing = true;
   if (!browserPromise) return;
   const pending = browserPromise;
-  browserPromise = null;
-  const browser = await pending;
-  await browser.close();
+  try {
+    const browser = await pending;
+    await browser.close();
+  } catch (err) {
+    logger.warn(
+      { err },
+      "[PdfService][closeBrowser] error while closing browser",
+    );
+  } finally {
+    browserPromise = null;
+  }
 };

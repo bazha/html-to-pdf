@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
-import { pdfQueue } from "../queues/queue";
-import { redisClient } from "../config/redis.config";
+import { pdfQueue, PDF_JOB_NAME } from "../queues/queue";
+import { appRedisClient } from "../config/redis.config";
 import {
   getPresignedUrlFromS3,
   PRESIGNED_URL_EXPIRY_SECONDS,
@@ -19,7 +19,7 @@ const generatePdf = async (
   const fileName = `${randomUUID()}.pdf`;
 
   const { html, detectedType } = generateHtmlFromAnyContent(content);
-  const job = await pdfQueue.add("generatePdf", {
+  const job = await pdfQueue.add(PDF_JOB_NAME, {
     html,
     fileName,
     reqId: req.id,
@@ -45,7 +45,7 @@ const getPdfUrlByJobId = async (
   const { jobId } = req.params;
   const cacheKey = `pdf:url:${jobId}`;
 
-  const cachedUrl = await redisClient.get(cacheKey);
+  const cachedUrl = await appRedisClient.get(cacheKey);
   if (cachedUrl) {
     res.status(200).json({ status: "completed", url: cachedUrl, cached: true });
     return;
@@ -80,7 +80,7 @@ const getPdfUrlByJobId = async (
   }
 
   const signedUrl = await getPresignedUrlFromS3(key);
-  await redisClient.setex(cacheKey, URL_CACHE_TTL_SECONDS, signedUrl);
+  await appRedisClient.setex(cacheKey, URL_CACHE_TTL_SECONDS, signedUrl);
 
   res.status(200).json({ status: "completed", url: signedUrl, cached: false });
 };

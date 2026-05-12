@@ -1,11 +1,11 @@
 import { Worker, Job, UnrecoverableError } from "bullmq";
-import { redisClient } from "../config/redis.config";
+import { bullmqConnection } from "../config/redis.config";
 import { PDF_QUEUE_NAME } from "../queues/queue";
 import { generatePDFBuffer } from "../services/pdf.service";
 import { uploadPdfToS3 } from "../services/s3.service";
 import { logger } from "../utils/logger";
 
-const JOB_TIMEOUT_MS = 75_000;
+export const JOB_TIMEOUT_MS = 75_000;
 
 const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
   let timer: NodeJS.Timeout;
@@ -41,7 +41,7 @@ export const pdfWorker = new Worker(
     return result;
   },
   {
-    connection: redisClient,
+    connection: bullmqConnection,
     // One Puppeteer page at a time per worker — single shared browser.
     concurrency: 1,
     removeOnComplete: { count: 100 },

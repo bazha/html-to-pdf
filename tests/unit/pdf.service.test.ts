@@ -31,7 +31,9 @@ vi.mock("../../src/utils/logger", () => ({
   logger: { warn: loggerWarn, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const { generatePDFBuffer } = await import("../../src/services/pdf.service");
+const { generatePDFBuffer, closeBrowser } = await import(
+  "../../src/services/pdf.service"
+);
 
 describe("pdf.service", () => {
   beforeEach(() => {
@@ -58,6 +60,14 @@ describe("pdf.service", () => {
     expect(ctx.err).toBeInstanceOf(Error);
     expect((ctx.err as Error).message).toBe("close failed");
     expect(msg).toContain("page.close() failed");
+  });
+
+  // Must run last — sets the module-level `closing` flag.
+  it("rejects further generatePDFBuffer calls after closeBrowser()", async () => {
+    await closeBrowser();
+    await expect(generatePDFBuffer("<h1>Hi</h1>")).rejects.toThrow(
+      "shutting down",
+    );
   });
 });
 
