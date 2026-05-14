@@ -9,6 +9,9 @@
 # Local Claude Code settings
 .claude/
 
+# Superpowers brainstorming session artifacts
+.superpowers/
+
 # Ad-hoc manual test scripts
 /test-*.js
 /test-*.md
