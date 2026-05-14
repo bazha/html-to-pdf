@@ -14,10 +14,6 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().default(3000),
     BULL_BOARD_USER: z.string().min(1).optional(),
     BULL_BOARD_PASSWORD: z.string().min(1).optional(),
-    // Number of trusted reverse-proxy hops in front of the app (0 = none).
-    // Express forwards req.ip from X-Forwarded-For only when this matches the
-    // actual hop count; never set to a value greater than reality.
-    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   })
   .refine(
     (v) => !!v.BULL_BOARD_USER === !!v.BULL_BOARD_PASSWORD,

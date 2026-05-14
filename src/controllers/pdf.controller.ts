@@ -9,6 +9,8 @@ import {
 import { generateHtmlFromAnyContent } from "../services/content.service";
 import type { ContentBody } from "../middlewares/validate-content.middleware";
 
+// Expire the cached URL 60s before the presigned URL itself expires so
+// clients never receive a signed URL that's about to become unusable.
 const URL_CACHE_TTL_SECONDS = PRESIGNED_URL_EXPIRY_SECONDS - 60;
 
 const generatePdf = async (
@@ -24,6 +26,12 @@ const generatePdf = async (
     fileName,
     reqId: req.id,
   });
+
+  if (!job.id) {
+    throw new Error(
+      '[PdfController][generatePdf] BullMQ returned a job with no id',
+    );
+  }
 
   req.log.info(
     { jobId: job.id, fileName, detectedType },

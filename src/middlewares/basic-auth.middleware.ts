@@ -1,11 +1,13 @@
 import { RequestHandler } from 'express';
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
+// Hash both inputs to a fixed length before comparison so timingSafeEqual
+// runs against equal-length buffers regardless of input length — otherwise
+// a length mismatch short-circuits and leaks length information.
 const safeEqual = (a: string, b: string): boolean => {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+  const hashA = createHash('sha256').update(a).digest();
+  const hashB = createHash('sha256').update(b).digest();
+  return timingSafeEqual(hashA, hashB);
 };
 
 export const basicAuth = (user: string, password: string): RequestHandler => {

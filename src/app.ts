@@ -8,6 +8,7 @@ import { appRedisClient } from './config/redis.config';
 
 const app = express();
 
+// Number of trusted reverse-proxy hops (integer >= 0; 0 = none, default).
 // Read directly from process.env (not env.ts) so this module stays free of
 // env-validation side effects — tests mock redis/S3 to avoid loading env.ts
 // at all, and CI has no AWS creds to satisfy that schema.
