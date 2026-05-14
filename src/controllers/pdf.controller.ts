@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
-import { pdfQueue } from "../queues/queue";
-import { redisClient } from "../config/redis.config";
+import { pdfQueue, PDF_JOB_NAME } from "../queues/queue";
+import { appRedisClient } from "../config/redis.config";
 import {
   getPresignedUrlFromS3,
   PRESIGNED_URL_EXPIRY_SECONDS,
@@ -9,6 +9,8 @@ import {
 import { generateHtmlFromAnyContent } from "../services/content.service";
 import type { ContentBody } from "../middlewares/validate-content.middleware";
 
+// Expire the cached URL 60s before the presigned URL itself expires so
+// clients never receive a signed URL that's about to become unusable.
 const URL_CACHE_TTL_SECONDS = PRESIGNED_URL_EXPIRY_SECONDS - 60;
 
 const generatePdf = async (
@@ -19,11 +21,17 @@ const generatePdf = async (
   const fileName = `${randomUUID()}.pdf`;
 
   const { html, detectedType } = generateHtmlFromAnyContent(content);
-  const job = await pdfQueue.add("generatePdf", {
+  const job = await pdfQueue.add(PDF_JOB_NAME, {
     html,
     fileName,
     reqId: req.id,
   });
+
+  if (!job.id) {
+    throw new Error(
+      '[PdfController][generatePdf] BullMQ returned a job with no id',
+    );
+  }
 
   req.log.info(
     { jobId: job.id, fileName, detectedType },
@@ -45,7 +53,7 @@ const getPdfUrlByJobId = async (
   const { jobId } = req.params;
   const cacheKey = `pdf:url:${jobId}`;
 
-  const cachedUrl = await redisClient.get(cacheKey);
+  const cachedUrl = await appRedisClient.get(cacheKey);
   if (cachedUrl) {
     res.status(200).json({ status: "completed", url: cachedUrl, cached: true });
     return;
@@ -80,7 +88,7 @@ const getPdfUrlByJobId = async (
   }
 
   const signedUrl = await getPresignedUrlFromS3(key);
-  await redisClient.setex(cacheKey, URL_CACHE_TTL_SECONDS, signedUrl);
+  await appRedisClient.setex(cacheKey, URL_CACHE_TTL_SECONDS, signedUrl);
 
   res.status(200).json({ status: "completed", url: signedUrl, cached: false });
 };

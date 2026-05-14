@@ -10,7 +10,7 @@ import { logger } from "../../utils/logger";
 
 const serverAdapter = new ExpressAdapter();
 
-export function setupQueueDashboard(app: Express): void {
+export const setupQueueDashboard = (app: Express): void => {
   createBullBoard({
     queues: [new BullMQAdapter(pdfQueue)],
     serverAdapter,
@@ -28,4 +28,4 @@ export function setupQueueDashboard(app: Express): void {
   }
 
   app.use("/queues", ...middlewares, serverAdapter.getRouter());
-}
+};

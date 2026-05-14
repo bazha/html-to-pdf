@@ -11,11 +11,19 @@ const generateRateLimit = rateLimit({
   message: { error: 'Too many PDF generation requests' },
 });
 
+const pollRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many polling requests' },
+});
+
 const router = Router();
 
 for (const prefix of ['/pdf', '/markdown']) {
   router.post(prefix, generateRateLimit, validateContent, generatePdf);
-  router.get(`${prefix}/:jobId/url`, getPdfUrlByJobId);
+  router.get(`${prefix}/:jobId/url`, pollRateLimit, getPdfUrlByJobId);
 }
 
 export default router;

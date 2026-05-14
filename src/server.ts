@@ -1,15 +1,16 @@
 import { env } from './config/env';
 import { logger } from './utils/logger';
 import app from './app';
-import { pdfWorker } from './workers/pdf.worker';
+import { pdfWorker, JOB_TIMEOUT_MS } from './workers/pdf.worker';
 import { closeBrowser } from './services/pdf.service';
 import { pdfQueue } from './queues/queue';
-import { redisClient } from './config/redis.config';
+import { bullmqConnection, appRedisClient } from './config/redis.config';
 
 const PORT = env.PORT;
-// Must exceed JOB_TIMEOUT_MS in pdf.worker so an in-flight job can finish
-// before the process exits. 90s = 75s job timeout + 15s for cleanup.
-const SHUTDOWN_TIMEOUT_MS = 90_000;
+const SHUTDOWN_GRACE_MS = 15_000;
+// Derived from the worker's job timeout so an in-flight job can finish
+// before forced exit. Bumping JOB_TIMEOUT_MS automatically widens this.
+const SHUTDOWN_TIMEOUT_MS = JOB_TIMEOUT_MS + SHUTDOWN_GRACE_MS;
 
 const server = app.listen(PORT, () => {
   logger.info(
@@ -25,18 +26,25 @@ const shutdown = async (signal: string): Promise<void> => {
   logger.info({ signal }, '[Server][shutdown] received signal');
 
   const work = (async () => {
+    // 1. Stop accepting HTTP traffic.
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    // 2. Drain the worker (lets the active job finish), then close the queue.
+    //    Both share `bullmqConnection`; quit it after they're done.
     await pdfWorker.close().catch((err) => {
       logger.warn({ err }, '[Server][shutdown] pdfWorker.close() failed');
     });
     await pdfQueue.close().catch((err) => {
       logger.warn({ err }, '[Server][shutdown] pdfQueue.close() failed');
     });
+    await bullmqConnection.quit().catch((err) => {
+      logger.warn({ err }, '[Server][shutdown] bullmqConnection.quit() failed');
+    });
+    // 3. Close Puppeteer browser and the app-side Redis client last.
     await closeBrowser().catch((err) => {
       logger.warn({ err }, '[Server][shutdown] closeBrowser() failed');
     });
-    await redisClient.quit().catch((err) => {
-      logger.warn({ err }, '[Server][shutdown] redisClient.quit() failed');
+    await appRedisClient.quit().catch((err) => {
+      logger.warn({ err }, '[Server][shutdown] appRedisClient.quit() failed');
     });
   })();
 

@@ -10,16 +10,20 @@ vi.mock("../../src/queues/queue", () => ({
     add: vi.fn().mockResolvedValue({ id: "job-rl" }),
     getJob: vi.fn(),
   },
+  PDF_QUEUE_NAME: "pdfGeneration",
+  PDF_JOB_NAME: "generatePdf",
 }));
 
 vi.mock("../../src/monitoring/queues/bull-board", bullBoardMockFactory);
 
 vi.mock("../../src/config/redis.config", () => ({
-  redisClient: {
+  appRedisClient: {
     get: vi.fn(async () => null),
     setex: vi.fn(async () => "OK"),
     ping: vi.fn(async () => "PONG"),
+    quit: vi.fn(async () => "OK"),
   },
+  bullmqConnection: { quit: vi.fn(async () => "OK") },
 }));
 
 vi.mock("../../src/services/s3.service", s3ServiceMockFactory);
