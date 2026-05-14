@@ -72,6 +72,7 @@ There is no build step (`tsconfig` has `noEmit: true`). For production, either r
 | `BULL_BOARD_PASSWORD` | no | — | If set, `BULL_BOARD_USER` must also be set. |
 | `TRUST_PROXY_HOPS` | no | `0` | Number of trusted reverse-proxy hops. Set to the actual hop count when running behind an LB so the rate limiter sees the real client IP. Never set higher than reality (spoof risk). |
 | `LOG_LEVEL` | no | `info` (`silent` under `NODE_ENV=test`) | `fatal`/`error`/`warn`/`info`/`debug`/`trace`/`silent`. |
+| `CORS_ORIGINS` | no | — | Comma-separated allowlist of origins permitted to call the API from a browser. Empty / unset = CORS middleware not mounted. Example: `http://localhost:5173,https://playground.example.com`. |
 
 ## Security notes
 

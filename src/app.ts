@@ -1,10 +1,17 @@
 import express from 'express';
+import cors from 'cors';
 import helmet from 'helmet';
 import pdfRoutes from './routes/pdf.route';
 import { errorHandler } from './middlewares/error-handler';
 import { requestContext } from './middlewares/request-context.middleware';
 import { setupQueueDashboard } from './monitoring/queues/bull-board';
 import { appRedisClient } from './config/redis.config';
+
+const parseCorsOrigins = (raw: string | undefined): string[] =>
+  (raw ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 
 const app = express();
 
@@ -15,6 +22,21 @@ const app = express();
 const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS);
 if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
   app.set('trust proxy', trustProxyHops);
+}
+
+const corsOrigins = parseCorsOrigins(process.env.CORS_ORIGINS);
+if (corsOrigins.length > 0) {
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin || corsOrigins.includes(origin)) {
+          cb(null, true);
+        } else {
+          cb(null, false);
+        }
+      },
+    }),
+  );
 }
 
 app.use(helmet());
