@@ -18,6 +18,7 @@
     "@bull-board/api": "^6.9.6",
     "@bull-board/express": "^6.9.6",
     "bullmq": "^5.53.1",
+    "cors": "^2.8.6",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.4.1",
@@ -30,6 +31,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.2",
     "@types/sanitize-html": "^2.16.1",
     "@types/supertest": "^2.0.16",
